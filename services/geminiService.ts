@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/generative-ai";
 
 const API_KEY = process.env.API_KEY;
 
@@ -41,7 +40,6 @@ export const restorePhoto = async (base64ImageData: string, mimeType: string): P
     }
     
     return null;
-
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     throw new Error("Komunikácia s AI zlyhala.");
