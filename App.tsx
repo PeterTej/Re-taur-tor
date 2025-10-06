@@ -4,6 +4,8 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [restoredImage, setRestoredImage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -11,12 +13,43 @@ export default function App() {
       setSelectedImage(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      setError(null);
+      setRestoredImage(null);
     }
   };
 
-  const handleRestore = () => {
-    // TODO: Implementovať logiku pre obnovu fotografie
-    console.log('Obnovujem fotografiu:', selectedImage?.name);
+  const handleRestore = async () => {
+    if (!selectedImage) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+
+      const response = await fetch('https://www.restorephotos.io/api', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const restoredUrl = URL.createObjectURL(blob);
+      setRestoredImage(restoredUrl);
+    } catch (err) {
+      console.error('Error restoring photo:', err);
+      setError(
+        err instanceof Error 
+          ? `Chyba pri obnovovaní fotografie: ${err.message}`
+          : 'Neznáma chyba pri obnovovaní fotografie'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,11 +73,18 @@ export default function App() {
         )}
       </div>
 
+      {/* Chybová správa */}
+      {error && (
+        <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#ffebee', color: '#c62828', borderRadius: '4px' }}>
+          {error}
+        </div>
+      )}
+
       {/* Tlačidlo pre obnovu */}
       <div style={{ marginBottom: '20px' }}>
         <button 
           onClick={handleRestore} 
-          disabled={!selectedImage}
+          disabled={!selectedImage || isLoading}
           style={{ 
             padding: '10px 20px', 
             fontSize: '16px', 
@@ -52,11 +92,11 @@ export default function App() {
             color: 'white', 
             border: 'none', 
             borderRadius: '4px',
-            cursor: selectedImage ? 'pointer' : 'not-allowed',
-            opacity: selectedImage ? 1 : 0.5
+            cursor: (selectedImage && !isLoading) ? 'pointer' : 'not-allowed',
+            opacity: (selectedImage && !isLoading) ? 1 : 0.5
           }}
         >
-          Obnoviť fotografiu
+          {isLoading ? 'Obnovujem...' : 'Obnoviť fotografiu'}
         </button>
       </div>
 
